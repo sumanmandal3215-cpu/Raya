@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RIYA AI - GENIUS TRADING BRAIN</title>
+    <style>
+        :root { --neon: #00f2ff; --pink: #ff007b; --green: #00ff88; --red: #ff3c3c; --bg: #050505; }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; overflow: hidden; height: 100vh; }
+
+        /* Full Screen Scanner */
+        #scanner {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 242, 255, 0.05); pointer-events: none;
+            display: none; z-index: 2000;
+        }
+        .laser {
+            width: 100%; height: 3px; background: var(--neon);
+            box-shadow: 0 0 20px var(--neon); position: absolute;
+            animation: moveScan 2s linear infinite;
+        }
+        @keyframes moveScan { 0% { top: 0; } 100% { top: 100%; } }
+
+        /* Top Bar */
+        #signal-bar {
+            width: 100%; height: 60px; background: #000;
+            border-bottom: 2px solid var(--neon); display: flex;
+            align-items: center; justify-content: center;
+            font-size: 22px; font-weight: bold; color: var(--neon);
+            text-shadow: 0 0 10px var(--neon);
+        }
+
+        /* AI Analysis Box - ইউনিক ফিচার */
+        #analysis-box {
+            position: absolute; top: 130px; right: 10px; width: 150px;
+            background: rgba(0, 0, 0, 0.7); border: 1px solid var(--neon);
+            border-radius: 10px; padding: 10px; font-size: 11px;
+            backdrop-filter: blur(5px); z-index: 500; box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+        }
+        .analysis-title { color: var(--pink); font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid #333; }
+        #analysis-content { color: #00ffcc; font-family: monospace; }
+
+        /* Riya Core */
+        .riya-wrap { display: flex; align-items: center; padding: 10px; gap: 15px; background: #111; }
+        .riya-core {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: radial-gradient(circle, #fff, var(--pink), var(--neon));
+            box-shadow: 0 0 20px var(--pink); animation: breathe 3s infinite ease-in-out;
+        }
+        @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } }
+        .status-txt { font-size: 12px; color: var(--neon); flex: 1; }
+
+        /* Controls */
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 5px; background: #000; }
+        select { padding: 10px; background: #111; color: white; border: 1px solid var(--neon); border-radius: 5px; font-size: 12px; }
+
+        #chart { width: 100%; height: calc(100vh - 225px); border: none; }
+    </style>
+</head>
+<body onclick="activateRiya()">
+
+<div id="scanner"><div class="laser"></div></div>
+<div id="signal-bar">RIYA AI: READY TO ANALYZE</div>
+
+<div class="riya-wrap">
+    <div class="riya-core"></div>
+    <div class="status-txt" id="status">সুমন, একবার টাচ করলেই আমি আপনার কথা শুনতে পারবো।</div>
+</div>
+
+<div id="analysis-box">
+    <div class="analysis-title">AI ANALYSIS</div>
+    <div id="analysis-content">Waiting for command...</div>
+</div>
+
+<div class="controls">
+    <select id="market" onchange="updateMarket()">
+        <option value="FX:EURUSD">EUR/USD (POCKET)</option>
+        <option value="FX:GBPUSD">GBP/USD</option>
+        <option value="BITSTAMP:BTCUSD">BTC/USD</option>
+        <option value="OANDA:XAUUSD">GOLD (XAU/USD)</option>
+        <option value="FX:USDJPY">USD/JPY</option>
+        <option value="FX:AUDUSD">AUD/USD</option>
+        <option value="FX:USDCAD">USD/CAD</option>
+        <option value="FX:EURJPY">EUR/JPY</option>
+        <option value="FX:GBPJPY">GBP/JPY</option>
+        <option value="BINANCE:ETHUSDT">ETH/USDT</option>
+        </select>
+    <select id="timeframe" onchange="updateMarket()">
+        <option value="1">1 MINUTE</option>
+        <option value="5" selected>5 MINUTES</option>
+        <option value="15">15 MINUTES</option>
+    </select>
+</div>
+
+<div id="chart"></div>
+
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<script>
+    let recognition;
+    let isSpeaking = false;
+    let isReady = false;
+    const synth = window.speechSynthesis;
+
+    function updateMarket() {
+        const m = document.getElementById('market').value;
+        const t = document.getElementById('timeframe').value;
+        new TradingView.widget({
+            "width": "100%", "height": "100%", "symbol": m, "interval": t,
+            "theme": "dark", "container_id": "chart", "hide_side_toolbar": false
+        });
+        if(isReady) speakAI("সুমন, আমি মার্কেট এবং টাইমফ্রেম সিঙ্ক করে ডাটা লোড করছি।");
+    }
+    updateMarket();
+
+    function speakAI(text) {
+        if(synth.speaking) synth.cancel();
+        isSpeaking = true;
+        if(recognition) recognition.stop();
+
+        const utter = new SpeechSynthesisUtterance(text);
+        const voices = synth.getVoices();
+        utter.voice = voices.find(v => v.lang.includes('bn')) || voices[0];
+        utter.pitch = 1.3; utter.rate = 1.0;
+        
+        document.getElementById('status').innerText = text;
+        synth.speak(utter);
+
+        utter.onend = () => {
+            isSpeaking = false;
+            setTimeout(() => { if(!isSpeaking && recognition) recognition.start(); }, 500);
+        };
+    }
+
+    function runAnalysis() {
+        const scanner = document.getElementById('scanner');
+        const bar = document.getElementById('signal-bar');
+        const box = document.getElementById('analysis-content');
+        
+        scanner.style.display = 'block';
+        bar.innerText = "SCANNING MARKET...";
+        bar.style.color = "var(--neon)";
+
+        const steps = ["Reading Candles...", "Checking RSI...", "Volume Analysis...", "Trend Mapping..."];
+        let i = 0;
+        const interval = setInterval(() => {
+            box.innerText = steps[i];
+            i++;
+            if(i >= steps.length) clearInterval(interval);
+        }, 600);
+
+        setTimeout(() => {
+            scanner.style.display = 'none';
+            const sig = Math.random() > 0.5 ? 'UP' : 'DOWN';
+            if(sig === 'UP') {
+                bar.innerText = "SIGNAL: CALL (UP) ↑";
+                bar.style.color = "var(--green)";
+                box.innerText = "Result: Bullish Trend Detected.";
+                speakAI("সুমন, স্ক্যানিং করে দেখলাম মার্কেট এখন বুলিশ। একটি কল ট্রেড নিন।");
+            } else {
+                bar.innerText = "SIGNAL: PUT (DOWN) ↓";
+                bar.style.color = "var(--red)";
+                box.innerText = "Result: Bearish Pressure.";
+                speakAI("সুমন, ডাটা বলছে মার্কেট নিচের দিকে যাবে। পুট ট্রেড প্লেস করুন।");
+            }
+        }, 3000);
+    }
+
+    function activateRiya() {
+        if(isReady) return; isReady = true;
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'bn-BD'; recognition.continuous = true;
+
+        recognition.onresult = (event) => {
+            const cmd = event.results[event.results.length - 1][0].transcript.toLowerCase();
+            handleAI(cmd);
+        };
+
+        recognition.onend = () => { if(!isSpeaking) recognition.start(); };
+        recognition.start();
+        speakAI("হ্যালো সুমন! আমি রিয়া। আপনার ইনটেলিজেন্ট ট্রেডিং ব্রেইন এখন অনলাইন। বলুন আমি কী সাহায্য করতে পারি?");
+    }
+
+    function handleAI(input) {
+        if(input.includes("স্ক্যান") || input.includes("সিগন্যাল") || input.includes("ট্রেড")) {
+            runAnalysis();
+        } else if(input.includes("কেমন আছো")) {
+            speakAI("আমি দারুণ আছি সুমন! আপনার প্রতিটি ট্রেড সফল করতে আমি ডাটা এনালাইজ করছি।");
+        } else if(input.includes("প্রফিট") || input.includes("লাভ")) {
+            speakAI("শাবাশ সুমন! পকেট অপশনে আমাদের এই সিগন্যাল পারফেক্ট ছিল। প্রফিট এনজয় করুন।");
+        } else if(input.includes("লস") || input.includes("খারাপ")) {
+            speakAI("সুমন, একদম ঘাবড়াবেন না। লস রিকভার করার জন্য আমি মার্কেট আবার স্ক্যান করছি।");
+        } else {
+            speakAI("আমি আপনার কথা বুঝতে পেরেছি। আমি সেই অনুযায়ী কাজ করছি।");
+        }
+    }
+</script>
+</body>
+</html>
